@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Memory</string>
+    <string name="layout_version">Relative Layout Version</string>
+    <string name="title_activity_game">Homework 2: Memory</string>
+</resources>
