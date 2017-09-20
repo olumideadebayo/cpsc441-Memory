@@ -6,6 +6,12 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+/*
+@author: olumide marc adebayo - 374994
+Memory Card Game simulator
+ */
+
+
 public class splash extends Activity {
 
     @Override

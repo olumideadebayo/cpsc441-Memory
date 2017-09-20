@@ -3,7 +3,7 @@ package org.adebayo.olumide.memory;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.app.Activity;
-import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -11,24 +11,48 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 
-import static android.R.interpolator.linear;
-import static java.util.logging.Logger.global;
+/*
+@author: olumide marc adebayo - 374994
+Memory Card Game simulator
+ */
 
 public class GameActivity extends Activity {
 
+    //2 rotations: 1 for default image to fruit, the 2nd animates in reverse
     Animation rotation,rotation2;
-    boolean isAnimating = false;
-    boolean isAnimating2 = false;
+
+    //will hold the prviously selected imageview and associated drawable
     ImageView prevImageView = null;
     Drawable prevDrawable = null;
+
+    //holds images
     private ArrayList<Drawable> drawables = new ArrayList<>();
+
+    //this holds the image views that need to be reset back to
+    //default image, its used by rotation2
     ImageView[] currentImageViews = null;
 
+    //used by rotation to know what view and drawable
+    //it should update after animating
+    private Drawable globalDrawable =null;
+    private ImageView globalImageView = null;
+
+    //keeps track of cards drawn
+    //this is set to the imageview's tag value
+    int cardsDrawn=0;
+
+    //this will be set to the total possible matches available
+    //based on the game selected
+    int totalMatches = 0;
+
+    Spinner spinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,52 +65,53 @@ public class GameActivity extends Activity {
         rotation.setAnimationListener(animationListener);
         rotation2.setAnimationListener(animationListener2);
 
-        //grab all images
-        //setDrawables();
 
-        Spinner spinner = findViewById(R.id.spinner);
+        spinner = findViewById(R.id.spinner);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 
-
             @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
+            public void onNothingSelected(AdapterView<?> adapterView) {}
 
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int i, long l) {
-Log.d("D",i+"");
-            //    if( 1== 1) return;
-                //hide spinner
-               // parent.setVisibility(View.INVISIBLE);
+
+                parent.setVisibility(View.INVISIBLE);
+
                 switch (i){
                     case 0:
+                        parent.setVisibility(View.VISIBLE);
+
+                        break;
+                    case 1:
+                        resetContainer();
                         setDrawables(8);
 
-                        resetContainer();
                         //draw 8 cards
                         drawCards(4,0);
                         drawCards(4,1);
+                        totalMatches=4;
                         break;
-                    case 1:
+                    case 2:
+                        resetContainer();
                         setDrawables(12);
 
-                        resetContainer();
                         //draw 12 cards
                         drawCards(4,0);
                         drawCards(4,1);
                         drawCards(4,2);
+                        totalMatches=6;
                         break;
-                    case 2:
+                    case 3:
+                        resetContainer();
                         setDrawables(24);
 
-                        resetContainer();
                         //draw 24 cards
                         drawCards(5,0);
                         drawCards(5,1);
                         drawCards(5,2);
                         drawCards(5,3);
                         drawCards(4,4);
+                        totalMatches=12;
 
                         break;
                     default:
@@ -98,28 +123,21 @@ Log.d("D",i+"");
     }
 
 
-    private             Random r = new Random();
-    private Drawable globalDrawable =null;
-    private ImageView globalImageView = null;
-    private ImageView globalImageView2 = null;
 
+    /*
+    click listener for the cards, its attached in the drawCards() method
+     */
     private View.OnClickListener cardClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
+
             //remove click listener
             view.setOnClickListener(null);
 
+            int index =    Integer.parseInt((String) view.getTag());
 
-            //replace with fruit image
-            int min = 0;
-            int max = drawables.size();
-           int index = r.nextInt(max - min ) + min;
 
-            Log.d("TAG ",index+" "+max);
-
-            Drawable _d = drawables.remove(index);
-
-            Log.d("TTAG",_d.toString());
+            Drawable _d = drawables.get(index);
 
             ImageView _iv = (ImageView) view;
             if(_iv != null ) {
@@ -128,28 +146,25 @@ Log.d("D",i+"");
 
                 _iv.startAnimation(rotation);
             }
-            Log.d("MM",isAnimating+" ");
 
-            while( isAnimating){}
-
-            Log.d("MM",isAnimating+" ");
 
             if( prevImageView== null){
                 prevImageView= _iv;
                 prevDrawable = _d;
             }else{
                 //do comparison
-
                 if( prevDrawable.getConstantState().equals(_d.getConstantState())){
-                    Log.d("YEZZZZ","match found");
                     prevImageView.setAlpha(0.5f);
                     _iv.setAlpha(0.5f);
                     prevImageView=null;
                     prevDrawable=null;
+                    totalMatches--;//keep track
+
+                    if( totalMatches < 1){//all possible matches found???
+                        spinner.setVisibility(View.VISIBLE);
+                        createToast(getResources().getString(R.string.game_over));
+                    }
                 }else{
-                    drawables.add(prevDrawable);//add back
-                    //revert image
-                    //globalImageView2=prevImageView;
 
                     _iv.clearAnimation();
                     _iv.setImageDrawable(_d);
@@ -161,41 +176,15 @@ Log.d("D",i+"");
 
                     _iv.startAnimation(rotation2);
 
-                    Log.d("--MM",isAnimating+" ");
-
-                   // while(globalImageView2 != null){}
-                    while(isAnimating2){}
-
-                    Log.d("--MM",isAnimating+" ");
-
-                    //prevImageView.setImageResource(R.drawable.fruits_front);
                     //add listener back
                     prevImageView.setOnClickListener(cardClickListener);
 
-                    //return currently clicked imageview back to its prev state
-                    drawables.add(_d);//put it back
-
-                    globalImageView2 = _iv;
-
-                    //_iv.startAnimation(rotation2);
-
-                    Log.d("-MM",isAnimating+" ");
-
-                    while(isAnimating2){}
-
-                    Log.d("-MM",isAnimating+" ");
 
                     _iv.setOnClickListener(cardClickListener);
-                    //_iv.setImageResource(R.drawable.fruits_front);
-
-
-
 
 
                     prevImageView=null;
                     prevDrawable=null;
-                    //prevImageView= _iv;
-                    //prevDrawable = _d;
                 }
 
             }
@@ -203,6 +192,11 @@ Log.d("D",i+"");
         }
     };
 
+    /*
+    this will draw the cards with the default image.
+    input : count (how many cards)
+    row : row number (no longer used really.  I had this when I was trying with gridlayout
+     */
     private void drawCards(int count, int row){
 
         //grab the container
@@ -224,6 +218,9 @@ Log.d("D",i+"");
             //create new ImageView
             ImageView _iv = new ImageView(GameActivity.this);
 
+            //set the index for this image view
+            _iv.setTag((cardsDrawn++)+"");
+
             //set click listener
             _iv.setOnClickListener(cardClickListener);
 
@@ -231,44 +228,38 @@ Log.d("D",i+"");
             //set image
             _iv.setImageResource(R.drawable.fruits_front);
 
-           // LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0,0,1f);
             //get layout params from parent
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) layout.getLayoutParams();
 
             _iv.setLayoutParams(layoutParams);
 
-            Log.d("d","row "+row +" column "+i);
         }
     }
 
     private void resetContainer(){
         //grab the container
         LinearLayout container = findViewById(R.id.card_container);
+
+        //reset a bunch of global vars
         prevImageView=null;
         prevDrawable=null;
-        globalImageView2=null;
         globalImageView=null;
         globalDrawable=null;
-        isAnimating=false;
+        drawables.clear();
         container.removeAllViews();
+        totalMatches=0;
+        cardsDrawn=0;
     }
 
     Animation.AnimationListener animationListener = new Animation.AnimationListener(){
         @Override
-        public void onAnimationStart(Animation animation) {
-            isAnimating=true;
-
-        }
+        public void onAnimationStart(Animation animation) {}
 
         @Override
         public void onAnimationEnd(Animation animation) {
-            Log.d("KK1",isAnimating+"");
-
             //TODO: check for nullity
             globalImageView.setImageDrawable(globalDrawable);
-            isAnimating=false;
         }
-
         @Override
         public void onAnimationRepeat(Animation animation) {        }
     };
@@ -276,33 +267,24 @@ Log.d("D",i+"");
 
     Animation.AnimationListener animationListener2 = new Animation.AnimationListener(){
         @Override
-        public void onAnimationStart(Animation animation) {
-            //isAnimating2=true;
-
-        }
+        public void onAnimationStart(Animation animation) {}
 
         @Override
         public void onAnimationEnd(Animation animation) {
-  //          Log.d("KK2",isAnimating2+"");
-/*
-            //TODO: check for nullity
-            globalImageView2.setImageResource(R.drawable.fruits_front);
-            isAnimating2=false;
-            globalImageView2=null;
-          */
             currentImageViews[0].setImageResource(R.drawable.fruits_front);
             currentImageViews[1].setImageResource(R.drawable.fruits_front);
         }
-
         @Override
         public void onAnimationRepeat(Animation animation) {        }
     };
 
 
+    /*
+    this loads the images into an arraylist given a number of images
+    e.g if you pass in 8, it will load 4 distinct fruits but 2 of each.
+     */
 
     private void setDrawables(int total){
-      //  private ArrayList<Drawable> _drawables = new ArrayList<>();
-
 
         Field[] drawablesFields = org.adebayo.olumide.memory.R.drawable.class.getFields();
 
@@ -315,7 +297,6 @@ Log.d("D",i+"");
             }
 
             try {
-                Log.i("LOG_TAG", "R.drawable." + field.getName());
 
                 //we want only fruit images
                 if( !field.getName().startsWith("fruit_")){
@@ -323,12 +304,6 @@ Log.d("D",i+"");
                 }
 
                 Drawable _drawable = getResources().getDrawable(field.getInt(null),null);
-
-                if(_drawable != null) {
-                    Log.d("TTT", _drawable.toString());
-                }else{
-                    Log.d("TTT","drawable not loaded");
-                }
 
                 drawables.add(_drawable);
                 drawables.add(_drawable);
@@ -340,10 +315,22 @@ Log.d("D",i+"");
             }
         }
 
-        Log.d("CCC", "total images loaded "+drawables.size());
-        for(Drawable dd:drawables){
-            Log.d("MMM",dd.getConstantState().toString());
+        //shuffle the list a bit :)
+        if(drawables != null && drawables.size()>2){
+            Collections.shuffle(drawables, new Random((long) drawables.size()));
         }
+    }
+
+    /*
+    just a convenience method for toasting
+     */
+    private void createToast(String str){
+        Toast toast = Toast.makeText(GameActivity.this,str,Toast.LENGTH_LONG);
+        int xOff = 0;
+        int yOff = 0;
+
+        toast.setGravity(Gravity.CENTER,xOff,yOff);
+        toast.show();
 
     }
 }
