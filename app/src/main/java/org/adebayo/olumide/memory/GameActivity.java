@@ -59,7 +59,7 @@ public class GameActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
-        //load anim
+        //load anim...1 is for fwd animation, 2 is for reverse animation
         rotation = AnimationUtils.loadAnimation(GameActivity.this,R.anim.fruit_animate);
         rotation2 = AnimationUtils.loadAnimation(GameActivity.this,R.anim.fruit_animate2);
         rotation.setAnimationListener(animationListener);
@@ -78,18 +78,20 @@ public class GameActivity extends Activity {
                 parent.setVisibility(View.INVISIBLE);
 
                 switch (i){
-                    case 0:
+                    case 0: //nothing to do really
                         parent.setVisibility(View.VISIBLE);
 
                         break;
                     case 1:
+                        //clear the card container
                         resetContainer();
+                        //grab 8 images (really, 4 images duplicated)
                         setDrawables(8);
 
                         //draw 8 cards
-                        drawCards(4,0);
-                        drawCards(4,1);
-                        totalMatches=4;
+                        drawCards(4,0);//row 0
+                        drawCards(4,1);//row 1
+                        totalMatches=4;//there are 4 possible matches
                         break;
                     case 2:
                         resetContainer();
@@ -131,16 +133,18 @@ public class GameActivity extends Activity {
         @Override
         public void onClick(View view) {
 
-            //remove click listener
+            //remove click listener for now
             view.setOnClickListener(null);
 
+            //get the tag we set earlier in draw cards
             int index =    Integer.parseInt((String) view.getTag());
 
-
+            //this is the image clicked on
             Drawable _d = drawables.get(index);
-
+            //this is its IV
             ImageView _iv = (ImageView) view;
             if(_iv != null ) {
+                //set it to a global variable so animation can use them
                 globalDrawable = _d;
                 globalImageView = _iv;
 
@@ -148,7 +152,7 @@ public class GameActivity extends Activity {
             }
 
 
-            if( prevImageView== null){
+            if( prevImageView== null){//not comparing
                 prevImageView= _iv;
                 prevDrawable = _d;
             }else{
@@ -164,12 +168,13 @@ public class GameActivity extends Activity {
                         spinner.setVisibility(View.VISIBLE);
                         createToast(getResources().getString(R.string.game_over));
                     }
-                }else{
+                }else{//prev does not match the current
 
+                    //stop any animation running
                     _iv.clearAnimation();
                     _iv.setImageDrawable(_d);
 
-
+                    //set this so anim2 can do a reverse rotation on them
                     currentImageViews = new ImageView[2];
                     currentImageViews[0] = prevImageView;
                     currentImageViews[1] = _iv;
@@ -178,11 +183,9 @@ public class GameActivity extends Activity {
 
                     //add listener back
                     prevImageView.setOnClickListener(cardClickListener);
-
-
                     _iv.setOnClickListener(cardClickListener);
 
-
+                    //clear prev* as well
                     prevImageView=null;
                     prevDrawable=null;
                 }
